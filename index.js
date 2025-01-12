@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { AzureOpenAI } = require('openai');
 const app = express();
-// const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5000;
 const fs = require('fs');
 const https = require('https');
 const os = require('os');
@@ -236,12 +236,15 @@ app.post('/ask', async (req, res) => {
   //   }
   // });
 
-  if (process.env.NODE_ENV !== 'production') {
-    const port = process.env.PORT || 5000;
-    app.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
-    });
-  }
+//   if (process.env.NODE_ENV !== 'production') {
+//     const port = process.env.PORT || 5000;
+//     app.listen(port, () => {
+//       console.log(`Server is running on http://localhost:${port}`);
+//     });
+//   }
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
   
   // Export the app for Vercel
   module.exports = app;
