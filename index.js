@@ -177,7 +177,7 @@ app.post('/ask', async (req, res) => {
                           // Generate a download link message
                           // const destPath = path.join(downloadsDir, path.basename(filePath));
                           const downloadLink = isRender
-                            ? `/opt/render/Downloads/${path.basename(filePath)}` // Log Render-specific path
+                            ? `https://ihiserversenpai.onrender.com/opt/render/Downloads/${path.basename(filePath)}` // Log Render-specific path
                             : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
 
                           console.log(`File downloaded to: ${destPath}`);
