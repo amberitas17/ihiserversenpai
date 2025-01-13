@@ -7,6 +7,7 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const path = require('path');
+// const fetch = require('node-fetch');
 
 const azureOpenAIKey = process.env.AZURE_OPENAI_KEY;
 const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -134,16 +135,20 @@ app.post('/ask', async (req, res) => {
                         const fileId = annotation.file_path.file_id;
                         console.log(`Extracted file path: ${filePath}`);
                         console.log(`Extracted file ID: ${fileId}`);
-                    
+
+                        const isRender = process.env.RENDER === 'true'; // Use an environment variable to check if on Render
+                        const downloadsDir = isRender ? '/opt/render/Downloads' : path.join(os.homedir(), 'Downloads');
                         // Define the destination path
-                        const downloadsDir = path.join(os.homedir(), 'Downloads');
+                        // const downloadsDir = path.join(os.homedir(), 'Downloads');
                         const destPath = path.join(downloadsDir, path.basename(filePath));
                     
                         // Ensure the downloads directory exists
+                        // if (!fs.existsSync(downloadsDir)) {
+                        //   fs.mkdirSync(downloadsDir);
+                        // }
                         if (!fs.existsSync(downloadsDir)) {
-                          fs.mkdirSync(downloadsDir);
+                          fs.mkdirSync(downloadsDir, { recursive: true });
                         }
-                    
                         // Define the file URL
                         const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
                     
@@ -169,7 +174,13 @@ app.post('/ask', async (req, res) => {
                           console.log(`File downloaded to: ${destPath}`);
                     
                           // Generate a download link message
-                          const downloadLink = `http://localhost:3000/downloads/${path.basename(filePath)}`;
+                          const destPath = path.join(downloadsDir, path.basename(filePath));
+                          const downloadLink = isRender
+                            ? `/opt/render/Downloads/${path.basename(filePath)}` // Log Render-specific path
+                            : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
+
+                          console.log(`File downloaded to: ${destPath}`);
+                          console.log(`Accessible link: ${downloadLink}`);
                           messages.push({ type: "text", content: `File is available for download: ${downloadLink}` });
                         } catch (error) {
                           console.error(`Error fetching file: ${error.message}`);
@@ -185,6 +196,7 @@ app.post('/ask', async (req, res) => {
                       });
                       const arrayBuffer = await imageResponse.arrayBuffer();
                       const base64Image = Buffer.from(arrayBuffer).toString('base64');
+                      console.log(base64Image);
                       const decodedResponse = Buffer.from(base64Image, 'base64').toString('utf-8');
                       
                       // Check if the response is an error message
