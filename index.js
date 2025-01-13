@@ -10,6 +10,7 @@ const path = require('path');
 // const fetch = require('node-fetch');
 const axios = require('axios');
 const FormData = require('form-data');
+const fileUpload = require('express-fileupload');
 
 const azureOpenAIKey = process.env.AZURE_OPENAI_KEY;
 const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
