@@ -52,6 +52,13 @@ app.post('/ask', async (req, res) => {
 
   // Check if a file is uploaded
   const file = req.files?.file;
+  if (req.files && req.files.file) {
+    // Process the file if it's present
+    console.log('File received:', req.files.file);
+    // Handle file upload logic here
+  } else {
+    console.log('No file uploaded.');
+  }
 
   if (file) {
     // File is uploaded, save the file locally
