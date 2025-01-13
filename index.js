@@ -8,6 +8,8 @@ const https = require('https');
 const os = require('os');
 const path = require('path');
 // const fetch = require('node-fetch');
+const axios = require('axios');
+const FormData = require('form-data');
 
 const azureOpenAIKey = process.env.AZURE_OPENAI_KEY;
 const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -32,6 +34,7 @@ const getClient = () => {
 const assistantsClient = getClient();
 
 app.use(express.json());
+app.use(fileUpload());
 
 // // Serve static files from the 'public' directory
 // app.use(express.static(path.join(__dirname, 'public')));
@@ -44,13 +47,52 @@ app.post('/ask', async (req, res) => {
   if (!userMessage) {
     return res.status(400).json({ error: 'Message body parameter is required' });
   }
+  let fileId = null;
+
+  // Check if a file is uploaded
+  const file = req.files?.file;
+
+  if (file) {
+    // File is uploaded, save the file locally
+    const filePath = `uploads/${file.name}`;
+    await file.mv(filePath);  // Save the file to disk
+    console.log(`File uploaded to: ${filePath}`);
+
+    // Create FormData and send to Azure API
+    const form = new FormData();
+    form.append('purpose', 'assistants');
+    form.append('file', fs.createReadStream(filePath));
+
+    try {
+      // Send the file to Azure
+      const response = await axios.post(
+        'https://azure2234.openai.azure.com/openai/files?api-version=2024-08-01-preview',
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            'api-key': process.env.AZURE_OPENAI_API_KEY, // Set your API key
+          },
+        }
+      );
+
+      // Extract file ID from the response
+      fileId = response.data.id;
+      console.log(`File uploaded to Azure. File ID: ${fileId}`);
+    } catch (error) {
+      console.error('Error uploading file:', error.message);
+      return res.status(500).json({ error: 'Failed to upload file to Azure' });
+    }
+  } else {
+    console.log('No file uploaded.');
+  }
 
   const options = {
     model: "gpt-4o-mini-2",
     name: "Assistant129",
     instructions: "You are here to visualize and generate charts and graphs. You are also generate contents for business reports, presentations, and proposals",
     tools: [{ type: "code_interpreter" }],
-    tool_resources: {"code_interpreter":{"file_ids":[]}},
+    tool_resources: {"code_interpreter":{file_ids: fileId ? [fileId] : []}},
     temperature: 1,
     top_p: 1
   };
