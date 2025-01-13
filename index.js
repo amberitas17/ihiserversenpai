@@ -7,7 +7,7 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const path = require('path');
-const fetch = require('node-fetch');
+// const fetch = require('node-fetch');
 
 const azureOpenAIKey = process.env.AZURE_OPENAI_KEY;
 const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
