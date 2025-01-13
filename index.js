@@ -174,7 +174,7 @@ app.post('/ask', async (req, res) => {
                           console.log(`File downloaded to: ${destPath}`);
                     
                           // Generate a download link message
-                          const destPath = path.join(downloadsDir, path.basename(filePath));
+                          // const destPath = path.join(downloadsDir, path.basename(filePath));
                           const downloadLink = isRender
                             ? `/opt/render/Downloads/${path.basename(filePath)}` // Log Render-specific path
                             : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
