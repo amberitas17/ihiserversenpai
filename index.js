@@ -138,15 +138,20 @@ app.post('/ask', async (req, res) => {
 
                         const isRender = process.env.RENDER === 'true'; // Use an environment variable to check if on Render
                         const downloadsDir = isRender ? '/opt/render/Downloads' : path.join(os.homedir(), 'Downloads');
-                        app.use('/downloads', express.static(downloadsDir));
                         // Define the destination path
                         // const downloadsDir = path.join(os.homedir(), 'Downloads');
+                        app.use('/downloads', express.static(downloadsDir, {
+                          setHeaders: (res, filePath) => {
+                            console.log(`Serving file: ${filePath}`); // Debug log
+                          }
+                        }));
                         const destPath = path.join(downloadsDir, path.basename(filePath));
                     
                         // Ensure the downloads directory exists
                         // if (!fs.existsSync(downloadsDir)) {
                         //   fs.mkdirSync(downloadsDir);
                         // }
+                        // app.use('/downloads', express.static(downloadsDir));
                         if (!fs.existsSync(downloadsDir)) {
                           fs.mkdirSync(downloadsDir, { recursive: true });
                         }
@@ -173,7 +178,11 @@ app.post('/ask', async (req, res) => {
                           fs.writeFileSync(destPath, buffer);
                     
                           console.log(`File downloaded to: ${destPath}`);
-                    
+                          if (fs.existsSync(destPath)) {
+                            console.log(`File saved successfully at: ${destPath}`);
+                          } else {
+                            console.log(`Error: File not found at path: ${destPath}`);
+                          }
                           // Generate a download link message
                           // const destPath = path.join(downloadsDir, path.basename(filePath));
                           const downloadLink = isRender
