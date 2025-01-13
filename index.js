@@ -139,6 +139,8 @@ app.post('/ask', async (req, res) => {
                         const downloadsDir = process.env.RENDER === 'true'
                           ? '/opt/render/Downloads'  // If it's running on Render
                           : path.join(os.homedir(), 'Downloads');  // If running locally
+                          console.log('RENDER environment variable:', process.env.RENDER);
+
 
                         // Serve the files in the /downloads route
                         app.use('/downloads', express.static(downloadsDir, {
