@@ -136,15 +136,18 @@ app.post('/ask', async (req, res) => {
                         console.log(`Extracted file path: ${filePath}`);
                         console.log(`Extracted file ID: ${fileId}`);
 
-                        const isRender = process.env.RENDER === 'true'; // Use an environment variable to check if on Render
-                        const downloadsDir = isRender ? '/opt/render/Downloads' : path.join(os.homedir(), 'Downloads');
-                        // Define the destination path
-                        // const downloadsDir = path.join(os.homedir(), 'Downloads');
+                        const downloadsDir = process.env.RENDER === 'true'
+                          ? '/opt/render/Downloads'  // If it's running on Render
+                          : path.join(os.homedir(), 'Downloads');  // If running locally
+
+                        // Serve the files in the /downloads route
                         app.use('/downloads', express.static(downloadsDir, {
                           setHeaders: (res, filePath) => {
-                            console.log(`Serving file: ${filePath}`); // Debug log
+                            console.log(`Serving file: ${filePath}`);
                           }
                         }));
+
+                        // Define the destination path for saving files
                         const destPath = path.join(downloadsDir, path.basename(filePath));
                     
                         // Ensure the downloads directory exists
@@ -185,9 +188,10 @@ app.post('/ask', async (req, res) => {
                           }
                           // Generate a download link message
                           // const destPath = path.join(downloadsDir, path.basename(filePath));
-                          const downloadLink = isRender
-                            ? `https://ihiserversenpai.onrender.com/opt/render/Downloads/${path.basename(filePath)}` // Log Render-specific path
-                            : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
+                          const downloadLink = process.env.RENDER === 'true'
+                          ? `https://your-render-app-url.com/downloads/${path.basename(filePath)}`
+                          : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
+
 
                           console.log(`File downloaded to: ${destPath}`);
                           console.log(`Accessible link: ${downloadLink}`);
