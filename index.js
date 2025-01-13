@@ -138,6 +138,7 @@ app.post('/ask', async (req, res) => {
 
                         const isRender = process.env.RENDER === 'true'; // Use an environment variable to check if on Render
                         const downloadsDir = isRender ? '/opt/render/Downloads' : path.join(os.homedir(), 'Downloads');
+                        app.use('/downloads', express.static(downloadsDir));
                         // Define the destination path
                         // const downloadsDir = path.join(os.homedir(), 'Downloads');
                         const destPath = path.join(downloadsDir, path.basename(filePath));
