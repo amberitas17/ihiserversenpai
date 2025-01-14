@@ -11,6 +11,9 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 const fileUpload = require('express-fileupload');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Temporary storage for uploaded files
+
 
 const azureOpenAIKey = process.env.AZURE_OPENAI_KEY;
 const azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -42,58 +45,44 @@ app.use(fileUpload());
 
 // app.get("/", (req, res) => res.send("Congratulation 🎉🎉! Our Express server is Running on Vercel"));
 
-app.post('/ask', async (req, res) => {
+app.post('/ask', upload.single('file'), async (req, res) => {
   console.log('Received request at /ask endpoint');
   const userMessage = req.body.message;
   if (!userMessage) {
     return res.status(400).json({ error: 'Message body parameter is required' });
   }
-  let fileId = null;
+  const uploadedFile = req.file;
+  try {
+    let file_id = null;
 
-  // Check if a file is uploaded
-  const file = req.files?.file;
-  if (req.files && req.files.file) {
-    // Process the file if it's present
-    console.log('File received:', req.files.file);
-    // Handle file upload logic here
-  } else {
-    console.log('No file uploaded.');
-  }
+    // If a file is uploaded, process it
+    if (uploadedFile) {
+      const formData = new FormData();
+      formData.append('purpose', 'assistants');
+      formData.append('file', fs.createReadStream(uploadedFile.path));
 
-  if (file) {
-    // File is uploaded, save the file locally
-    const filePath = `uploads/${file.name}`;
-    await file.mv(filePath);  // Save the file to disk
-    console.log(`File uploaded to: ${filePath}`);
-
-    // Create FormData and send to Azure API
-    const form = new FormData();
-    form.append('purpose', 'assistants');
-    form.append('file', fs.createReadStream(filePath));
-
-    try {
-      // Send the file to Azure
-      const response = await axios.post(
+      console.log('Uploading file to Azure OpenAI...');
+      const uploadResponse = await fetch(
         'https://azure2234.openai.azure.com/openai/files?api-version=2024-08-01-preview',
-        form,
         {
+          method: 'POST',
           headers: {
-            ...form.getHeaders(),
-            'api-key': process.env.AZURE_OPENAI_API_KEY, // Set your API key
+            'api-key': process.env.AZURE_OPENAI_API_KEY,
           },
+          body: formData,
         }
       );
 
-      // Extract file ID from the response
-      fileId = response.data.id;
-      console.log(`File uploaded to Azure. File ID: ${fileId}`);
-    } catch (error) {
-      console.error('Error uploading file:', error.message);
-      return res.status(500).json({ error: 'Failed to upload file to Azure' });
+      if (!uploadResponse.ok) {
+        throw new Error(`File upload failed: ${uploadResponse.statusText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      file_id = uploadResult.id; // Retrieve file_id from Azure OpenAI's response
+
+      // Clean up the temporary file
+      fs.unlinkSync(uploadedFile.path);
     }
-  } else {
-    console.log('No file uploaded.');
-  }
 
   const options = {
     model: "gpt-4o-mini-2",
