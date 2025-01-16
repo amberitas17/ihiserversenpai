@@ -13,6 +13,9 @@ const FormData = require('form-data');
 // const fileUpload = require('express-fileupload');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); // Temporary storage for uploaded files
+const cors = require('cors');
+
+
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -42,6 +45,7 @@ const getClient = () => {
 const assistantsClient = getClient();
 
 app.use(express.json());
+app.use(cors());
 // app.use(fileUpload());
 
 // // Serve static files from the 'public' directory
