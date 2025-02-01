@@ -159,7 +159,7 @@ app.post('/ask', async (req, res) => {
     tools: [{ type: "code_interpreter" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
     tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
-    temperature: 1,
+    temperature: 0.1,
     top_p: 1
   };
   const role = "user";
