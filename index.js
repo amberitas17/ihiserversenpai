@@ -155,7 +155,7 @@ app.post('/ask', async (req, res) => {
   const options = {
     model: "gpt-4o-mini-2",
     name: "Assistant129",
-    instructions: "You are here to visualize and generate charts and graphs. You are also generate contents for business reports, presentations, and proposals",
+    instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
     tools: [{ type: "code_interpreter" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
     tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
