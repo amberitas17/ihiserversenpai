@@ -195,24 +195,35 @@ app.post('/ask', async (req, res) => {
     );
     console.log(`Run started: ${JSON.stringify(runResponse)}`);
 
-    const timeout = 30000; // 30 seconds
-    const startTime = Date.now();
-    let runStatus = runResponse.status;
+    // const timeout = 30000; // 30 seconds
+    // const startTime = Date.now();
+    // let runStatus = runResponse.status;
     
-    while (runStatus === 'queued' || runStatus === 'in_progress') {
-      if (Date.now() - startTime > timeout) {
-        return res.status(504).json({ error: 'Processing is taking too long. Please try again later.' });
-      }
+    // while (runStatus === 'queued' || runStatus === 'in_progress') {
+    //   if (Date.now() - startTime > timeout) {
+    //     return res.status(504).json({ error: 'Processing is taking too long. Please try again later.' });
+    //   }
     
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    //   await new Promise(resolve => setTimeout(resolve, 1000));
     
-      const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
-        assistantThread.id,
-        runResponse.id
-      );
-      runStatus = runStatusResponse.status;
-      console.log(`Current run status: ${runStatus}`);
-    }
+    //   const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
+    //     assistantThread.id,
+    //     runResponse.id
+    //   );
+    //   runStatus = runStatusResponse.status;
+    //   console.log(`Current run status: ${runStatus}`);
+    // }
+     // Polling until the run completes or fails
+     let runStatus = runResponse.status;
+     while (runStatus === 'queued' || runStatus === 'in_progress') {
+       await new Promise(resolve => setTimeout(resolve, 1000));
+       const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
+         assistantThread.id,
+         runResponse.id
+       );
+       runStatus = runStatusResponse.status;
+       console.log(`Current run status: ${runStatus}`);
+     }
 
      // Get the messages in the thread once the run has completed
      if (runStatus === 'completed') {
