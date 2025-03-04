@@ -155,11 +155,11 @@ app.post('/ask', async (req, res) => {
   const options = {
     model: "gpt-4o-mini-2",
     name: "Assistant129",
-    instructions: "You are here to visualize and generate charts and graphs. You are also generate contents for business reports, presentations, and proposals",
+    instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
     tools: [{ type: "code_interpreter" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
     tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
-    temperature: 1,
+    temperature: 0.1,
     top_p: 1
   };
   const role = "user";
@@ -195,17 +195,35 @@ app.post('/ask', async (req, res) => {
     );
     console.log(`Run started: ${JSON.stringify(runResponse)}`);
 
-    // Polling until the run completes or fails
-    let runStatus = runResponse.status;
-    while (runStatus === 'queued' || runStatus === 'in_progress') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
-        assistantThread.id,
-        runResponse.id
-      );
-      runStatus = runStatusResponse.status;
-      console.log(`Current run status: ${runStatus}`);
-    }
+    // const timeout = 30000; // 30 seconds
+    // const startTime = Date.now();
+    // let runStatus = runResponse.status;
+    
+    // while (runStatus === 'queued' || runStatus === 'in_progress') {
+    //   if (Date.now() - startTime > timeout) {
+    //     return res.status(504).json({ error: 'Processing is taking too long. Please try again later.' });
+    //   }
+    
+    //   await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    //   const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
+    //     assistantThread.id,
+    //     runResponse.id
+    //   );
+    //   runStatus = runStatusResponse.status;
+    //   console.log(`Current run status: ${runStatus}`);
+    // }
+     // Polling until the run completes or fails
+     let runStatus = runResponse.status;
+     while (runStatus === 'queued' || runStatus === 'in_progress') {
+       await new Promise(resolve => setTimeout(resolve, 1000));
+       const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
+         assistantThread.id,
+         runResponse.id
+       );
+       runStatus = runStatusResponse.status;
+       console.log(`Current run status: ${runStatus}`);
+     }
 
      // Get the messages in the thread once the run has completed
      if (runStatus === 'completed') {
