@@ -22,6 +22,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+      - name: Set environment variables
+        run: |
+          echo "AZURE_OPENAI_KEY=${{ secrets.AZURE_OPENAI_KEY }}" >> $GITHUB_ENV
+          echo "AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}" >> $GITHUB_ENV
+          echo "OPENAI_API_VERSION=${{ secrets.OPENAI_API_VERSIONE }}" >> $GITHUB_ENV
 
       - name: npm install, build, and test
         run: |
@@ -71,7 +76,3 @@ jobs:
           app-name: 'ihisenpai'
           slot-name: 'Production'
           package: .
-          app-settings: |
-              AZURE_OPENAI_KEY=${{ secrets.AZURE_OPENAI_KEY }}
-              AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
-              OPENAI_API_VERSION=${{ secrets.OPENAI_API_VERSION }}
