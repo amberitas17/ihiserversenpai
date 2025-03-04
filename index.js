@@ -28,7 +28,7 @@ const azureOpenAIVersion = process.env.OPENAI_API_VERSION;
 
 console.log("AZURE_OPENAI_KEY:", process.env.AZURE_OPENAI_KEY ? "✅ Loaded" : "❌ Missing");
 console.log("AZURE_OPENAI_ENDPOINT:", process.env.AZURE_OPENAI_ENDPOINT ? "✅ Loaded" : "❌ Missing");
-console.log("AZURE_OPENAI_DEPLOYMENT_NAME:", process.env.AZURE_OPENAI_DEPLOYMENT_NAME ? "✅ Loaded" : "❌ Missing");
+console.log("AZURE_OPENAI_DEPLOYMENT_NAME:", process.env.OPENAI_API_VERSION ? "✅ Loaded" : "❌ Missing");
 
 console.log("AZURE_OPENAI_KEY:", process.env.AZURE_OPENAI_KEY);
 
