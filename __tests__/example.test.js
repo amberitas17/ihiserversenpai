@@ -52,3 +52,12 @@ describe('POST /ask', function() {
       expect(res.body.error).to.equal('Message body parameter is required');
     });
   });
+
+  after(async () => {
+    await new Promise((resolve, reject) => {
+      app.close((err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
