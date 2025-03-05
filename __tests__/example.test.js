@@ -55,10 +55,12 @@ describe('POST /ask', function() {
   });
 
   after(async () => {
-    await new Promise((resolve, reject) => {
-      server.close((err) => {
-        if (err) return reject(err);
-        resolve();
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close((err) => {
+          if (err) return reject(err);
+          resolve();
+        });
       });
-    });
+    }
   });
