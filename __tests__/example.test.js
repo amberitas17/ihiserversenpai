@@ -55,7 +55,7 @@ describe('POST /ask', function() {
 
   after(async () => {
     await new Promise((resolve, reject) => {
-      app.close((err) => {
+      server.close((err) => {
         if (err) return reject(err);
         resolve();
       });
