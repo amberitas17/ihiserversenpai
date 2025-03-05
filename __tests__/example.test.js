@@ -2,6 +2,7 @@ const request = require('supertest');
 const path = require('path');
 const fs = require('fs');
 const app = require('../index'); // Assuming your Express app is exported from index.js
+let server;
 
 describe('POST /upload-file', function() {
     this.timeout(20000); // Increase timeout to 10 seconds
