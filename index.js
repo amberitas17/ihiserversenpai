@@ -327,8 +327,8 @@ app.post('/ask', async (req, res) => {
                           }
                           // Generate a download link message
                           // const destPath = path.join(downloadsDir, path.basename(filePath));
-                          const downloadLink = process.env.RENDER === 'true'
-                          ? `https://ihiserversenpai.onrender.com/downloads/${path.basename(filePath)}`
+                          const downloadLink = process.env.AZURE === 'true'
+                          ? `https://ihisenpai-g4b7dtbdbkdydcb7.canadacentral-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                           : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
 
 
