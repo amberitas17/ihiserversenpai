@@ -32,7 +32,7 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --exit
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
