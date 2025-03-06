@@ -58,6 +58,10 @@ app.use(cors());
 // app.use(express.static(path.join(__dirname, 'public')));
 
 // app.get("/", (req, res) => res.send("Congratulation 🎉🎉! Our Express server is Running on Vercel"));
+
+app.get('/', (req, res) => {
+  res.send('Hello, World!');
+});
 app.post('/upload-file', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
