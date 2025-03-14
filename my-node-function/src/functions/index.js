@@ -14,6 +14,7 @@ const FormData = require('form-data');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); // Temporary storage for uploaded files
 const cors = require('cors');
+const createHandler = require("azure-function-express").createHandler;
 
 
 
@@ -382,12 +383,4 @@ app.listen(port, () => {
   
   // Export the app for Vercel
  // Azure Function Export
-module.exports = async function (context, req) {
-  context.res = await new Promise((resolve) => {
-    app(req, {
-      send: (body) => resolve({ status: 200, body }),
-      json: (body) => resolve({ status: 200, body }),
-      status: (code) => ({ json: (body) => resolve({ status: code, body }) }),
-    });
-  });
-};
+ module.exports = createHandler(app);
