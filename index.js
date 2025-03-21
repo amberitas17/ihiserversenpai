@@ -273,7 +273,7 @@ app.post('/ask', async (req, res) => {
                         console.log(`Extracted file path: ${filePath}`);
                         console.log(`Extracted file ID: ${fileId}`);
 
-                        const downloadsDir = process.env.AZURE === 'true'
+                        const downloadsDir = process.env.RENDER === 'true'
                           ? '/opt/render/Downloads'  // If it's running on Render
                           : path.join(os.homedir(), 'Downloads');  // If running locally
                           console.log('RENDER environment variable:', process.env.AZURE);
