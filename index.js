@@ -170,7 +170,7 @@ app.post('/ask', async (req, res) => {
     // tool_resources: { code_interpreter: { file_ids: [] } },
     tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
     temperature: 0.1,
-    top_p: 1
+    top_p: 0.9
   };
   const role = "user";
   const message = userMessage;
