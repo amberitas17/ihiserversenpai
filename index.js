@@ -76,7 +76,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
     form.append('file', fs.createReadStream(filePath));
 
     const response = await axios.post(
-      `${azureOpenAIEndpoint}/openai/files?api-version=2024-08-01-preview`,
+      `${azureOpenAIEndpoint}/openai/files?api-version=2025-01-01-preview`,
       form,
       {
         headers: {
@@ -163,14 +163,14 @@ app.post('/ask', async (req, res) => {
   // }
 
   const options = {
-    model: "gpt-4o-mini-2",
-    name: "Assistant129",
+    model: "gpt-4o",
+    name: "Assistant867",
     instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
     tools: [{ type: "code_interpreter" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
     tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
-    temperature: 0.1,
-    top_p: 0.9
+    temperature: 0.7,
+    top_p: 0.9,
   };
   const role = "user";
   const message = userMessage;
@@ -298,7 +298,7 @@ app.post('/ask', async (req, res) => {
                           fs.mkdirSync(downloadsDir, { recursive: true });
                         }
                         // Define the file URL
-                        const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                        const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2025-01-01-preview`;
                     
                         try {
                           // Fetch and download the file from URL
@@ -328,7 +328,7 @@ app.post('/ask', async (req, res) => {
                           // Generate a download link message
                           // const destPath = path.join(downloadsDir, path.basename(filePath));
                           const downloadLink = process.env.AZURE === 'true'
-                          ? `https://ihisenpai23.azurewebsites.net/downloads/${path.basename(filePath)}`
+                          ? `ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                           : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
 
 
@@ -342,7 +342,7 @@ app.post('/ask', async (req, res) => {
                     }
                   } else if (item.type === "image_file") {
                     try {
-                      const imageResponse = await fetch(`https://azure2234.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                      const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2025-01-01-preview`, {
                         headers: {
                           'api-key': process.env.AZURE_OPENAI_KEY
                         }

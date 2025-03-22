@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/ec1d748d-d830-4366-8c2f-95cf219e7cf8/resourceGroups/RSG-SenpaiApp-PoC/providers/Microsoft.Web/sites/ihisenpaipoc/subscriptions/ec1d748d-d830-4366-8c2f-95cf219e7cf8/resourceGroups/appsvc_linux_centralus_basic/providers/Microsoft.Web/sites/ihisenpaipocsample",
+    "appService.deploySubpath": "."
+}
