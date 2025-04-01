@@ -208,7 +208,7 @@ app.post('/ask', async (req, res) => {
                 }
               } else if (item.type === "image_file") {
                 try {
-                  const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-previeww`, {
+                  const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                     headers: {
                       'api-key': process.env.AZURE_OPENAI_KEY
                     }
