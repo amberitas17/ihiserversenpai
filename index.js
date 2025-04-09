@@ -52,10 +52,22 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
       headers: { ...form.getHeaders(), 'api-key': azureOpenAIKey },
     });
 
-    res.json({ file_id: response.data.id });
+    // Check if the response is JSON
+    if (response.headers['content-type']?.includes('application/json')) {
+      res.json({ file_id: response.data.id });
+    } else {
+      console.error('Unexpected response:', response.data);
+      res.status(500).json({ error: 'Unexpected response from server' });
+    }
   } catch (error) {
-    console.error('Upload Error:', error.message);
-    res.status(500).json({ error: 'Failed to upload file' });
+    if (error.response) {
+      // Log the server's response
+      console.error('Server Error:', error.response.status, error.response.data);
+      res.status(error.response.status).json({ error: error.response.data });
+    } else {
+      console.error('Upload Error:', error.message);
+      res.status(500).json({ error: 'Failed to upload file' });
+    }
   } finally {
     fs.unlinkSync(req.file.path);
   }
