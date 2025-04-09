@@ -164,7 +164,7 @@ app.post('/ask', async (req, res) => {
                       fs.mkdirSync(downloadsDir, { recursive: true });
                     }
                     // Define the file URL
-                    const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2025-01-01-preview`;
+                    const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
                 
                     try {
                       // Fetch and download the file from URL
