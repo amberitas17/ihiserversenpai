@@ -76,7 +76,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
     form.append('file', fs.createReadStream(filePath));
 
     const response = await axios.post(
-      `${azureOpenAIEndpoint}/openai/files?api-version=2025-01-01-preview`,
+      `${azureOpenAIEndpoint}/openai/files?api-version=2024-05-01-preview`,
       form,
       {
         headers: {
@@ -239,7 +239,7 @@ app.post('/ask', async (req, res) => {
                       fs.mkdirSync(downloadsDir, { recursive: true });
                     }
                     // Define the file URL
-                    const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                    const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
                 
                     try {
                       // Fetch and download the file from URL
@@ -283,7 +283,7 @@ app.post('/ask', async (req, res) => {
             }
           } else if (item.type === "image_file") {
             try {
-              const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2025-01-01-preview`, {
+              const imageResponse = await fetch(`https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                 headers: {
                   'api-key': process.env.AZURE_OPENAI_KEY
                 }
