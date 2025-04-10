@@ -177,203 +177,145 @@ app.post('/ask', async (req, res) => {
   console.log('Processing request...');
 
   try {
-    // Create an assistant
     const assistantResponse = await assistantsClient.beta.assistants.create(options);
-    console.log(`Assistant created: ${JSON.stringify(assistantResponse)}`);
+    const thread = await assistantsClient.beta.threads.create({});
+    await assistantsClient.beta.threads.messages.create(thread.id, { role: "user", content: message });
 
-    // Create a thread
-    const assistantThread = await assistantsClient.beta.threads.create({});
-    console.log(`Thread created: ${JSON.stringify(assistantThread)}`);
+    const run = await assistantsClient.beta.threads.runs.create(thread.id, { assistant_id: assistantResponse.id });
 
-    // Add a user question to the thread
-    const threadResponse = await assistantsClient.beta.threads.messages.create(
-      assistantThread.id,
-      {
-        role,
-        content: message,
-        // file_ids: [fileid]
+    let runStatus = run.status;
+    let attempt = 0;
+    const maxAttempts = 20;
+
+    while (runStatus === 'queued' || runStatus === 'in_progress') {
+      if (attempt >= maxAttempts) {
+        return res.status(504).json({ error: 'Processing took too long. Try again later.' });
       }
-    );
-    console.log(`Message created: ${JSON.stringify(threadResponse)}`);
+      await new Promise(resolve => setTimeout(resolve, 1000 + attempt * 200));
+      attempt++;
 
-    // Run the thread
-    const runResponse = await assistantsClient.beta.threads.runs.create(
-      assistantThread.id,
-      {
-        assistant_id: assistantResponse.id,
-      }
-    );
-    console.log(`Run started: ${JSON.stringify(runResponse)}`);
+      const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(thread.id, run.id);
+      runStatus = runStatusResponse.status;
+      console.log(`Current run status: ${runStatus}`);
+    }
 
-    // const timeout = 30000; // 30 seconds
-    // const startTime = Date.now();
-    // let runStatus = runResponse.status;
-    
-    // while (runStatus === 'queued' || runStatus === 'in_progress') {
-    //   if (Date.now() - startTime > timeout) {
-    //     return res.status(504).json({ error: 'Processing is taking too long. Please try again later.' });
-    //   }
-    
-    //   await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    //   const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
-    //     assistantThread.id,
-    //     runResponse.id
-    //   );
-    //   runStatus = runStatusResponse.status;
-    //   console.log(`Current run status: ${runStatus}`);
-    // }
-     // Polling until the run completes or fails
-     let runStatus = runResponse.status;
-     while (runStatus === 'queued' || runStatus === 'in_progress') {
-       await new Promise(resolve => setTimeout(resolve, 1000));
-       const runStatusResponse = await assistantsClient.beta.threads.runs.retrieve(
-         assistantThread.id,
-         runResponse.id
-       );
-       runStatus = runStatusResponse.status;
-       console.log(`Current run status: ${runStatus}`);
-     }
+    if (runStatus === 'completed') {
+      const messagesResponse = await assistantsClient.beta.threads.messages.list(thread.id);
+      console.log(`Messages in the thread: ${JSON.stringify(messagesResponse)}`);
 
-     // Get the messages in the thread once the run has completed
-     if (runStatus === 'completed') {
-        const messagesResponse = await assistantsClient.beta.threads.messages.list(
-            assistantThread.id
-          );
-          console.log(`Messages in the thread: ${JSON.stringify(messagesResponse)}`);
-          const messages = [];
-          let firstResponseAdded = false;
-          let fileName = '';
-          let filePath = '';
-          let fileId = '';
-          for await (const runMessageDatum of messagesResponse) {
-            for (const item of runMessageDatum.content) {
-                if (!firstResponseAdded){
-                  if (item.type === "text") {
-                    messages.push({ type: "text", content: item.text?.value});
-                    console.log(`Message: ${item.text?.value}`);
-                    console.log(`Attachment: ${JSON.stringify(item.text?.annotations)}`);
-                    firstResponseAdded = true;
-                    // const baseName = item.text?.value.split(' ').slice(-1)[0];
-                    // let extension = 'xlsx'; // Default extension
-                    // if (item.text?.value.includes('DOCX')) {
-                    //   extension = 'docx';
-                    // } else if (item.text?.value.includes('PDF')) {
-                    //   extension = 'pdf';
-                    // } else if (item.text?.value.includes('PPTX')) {
-                    //   extension = 'pptx';
-                    // }
-                    // fileName = `${baseName}.${extension}`;
-                    // // console.log(`Generated filename: ${fileName}`);
-                    if (item.text?.annotations) {
-                      const annotations = item.text.annotations.filter(ann => ann.type === 'file_path');
-                      for (const annotation of annotations) {
-                        const filePath = annotation.text.replace('sandbox:', '');
-                        const fileId = annotation.file_path.file_id;
-                        console.log(`Extracted file path: ${filePath}`);
-                        console.log(`Extracted file ID: ${fileId}`);
+      const downloadLinks = [];
+      let imageBase64 = null;
 
-                        const downloadsDir = process.env.RENDER === 'true'
-                          ? '/opt/render/Downloads'  // If it's running on Render
-                          : path.join(os.homedir(), 'Downloads');  // If running locally
-                          console.log('RENDER environment variable:', process.env.AZURE);
+      for await (const runMessageDatum of messagesResponse) {
+        for (const item of runMessageDatum.content) {
+          if (item.type === "text" && item.text?.annotations) {
+            const annotations = item.text.annotations.filter(ann => ann.type === 'file_path');
+            for (const annotation of annotations) {
+              const filePath = annotation.text.replace('sandbox:', '');
+              const fileId = annotation.file_path.file_id;
+
+              const downloadsDir = process.env.RENDER === 'true'
+                      ? '/opt/render/Downloads'  // If it's running on Render
+                      : path.join(os.homedir(), 'Downloads');  // If running locally
+                      console.log('RENDER environment variable:', process.env.AZURE);
 
 
-                        // Serve the files in the /downloads route
-                        app.use('/downloads', express.static(downloadsDir, {
-                          setHeaders: (res, filePath) => {
-                            console.log(`Serving file: ${filePath}`);
-                          }
-                        }));
-
-                        // Define the destination path for saving files
-                        const destPath = path.join(downloadsDir, path.basename(filePath));
-                    
-                        // Ensure the downloads directory exists
-                        // if (!fs.existsSync(downloadsDir)) {
-                        //   fs.mkdirSync(downloadsDir);
-                        // }
-                        // app.use('/downloads', express.static(downloadsDir));
-                        if (!fs.existsSync(downloadsDir)) {
-                          fs.mkdirSync(downloadsDir, { recursive: true });
-                        }
-                        // Define the file URL
-                        const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2025-01-01-preview`;
-                    
-                        try {
-                          // Fetch and download the file from URL
-                          const response = await fetch(fileUrl, {
-                            headers: {
-                              'api-key': process.env.AZURE_OPENAI_KEY
-                            }
-                          });
-                    
-                          if (!response.ok) {
-                            throw new Error(`Failed to download file: ${response.statusText}`);
-                          }
-                    
-                          // Get the file content as an array buffer
-                          const arrayBuffer = await response.arrayBuffer();
-                          const buffer = Buffer.from(arrayBuffer);
-                    
-                          // Write the buffer to a file
-                          fs.writeFileSync(destPath, buffer);
-                    
-                          console.log(`File downloaded to: ${destPath}`);
-                          if (fs.existsSync(destPath)) {
-                            console.log(`File saved successfully at: ${destPath}`);
-                          } else {
-                            console.log(`Error: File not found at path: ${destPath}`);
-                          }
-                          // Generate a download link message
-                          // const destPath = path.join(downloadsDir, path.basename(filePath));
-                          const downloadLink = process.env.AZURE === 'true'
-                          ? `ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
-                          : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
-
-
-                          console.log(`File downloaded to: ${destPath}`);
-                          console.log(`Accessible link: ${downloadLink}`);
-                          messages.push({ type: "text", content: `File is available for download: ${downloadLink}` });
-                        } catch (error) {
-                          console.error(`Error fetching file: ${error.message}`);
-                        }
+                    // Serve the files in the /downloads route
+                    app.use('/downloads', express.static(downloadsDir, {
+                      setHeaders: (res, filePath) => {
+                        console.log(`Serving file: ${filePath}`);
                       }
+                    }));
+
+                    // Define the destination path for saving files
+                    const destPath = path.join(downloadsDir, path.basename(filePath));
+                
+                    // Ensure the downloads directory exists
+                    // if (!fs.existsSync(downloadsDir)) {
+                    //   fs.mkdirSync(downloadsDir);
+                    // }
+                    // app.use('/downloads', express.static(downloadsDir));
+                    if (!fs.existsSync(downloadsDir)) {
+                      fs.mkdirSync(downloadsDir, { recursive: true });
                     }
-                  } else if (item.type === "image_file") {
+                    // Define the file URL
+                    const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                
                     try {
-                      const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2025-01-01-preview`, {
+                      // Fetch and download the file from URL
+                      const response = await fetch(fileUrl, {
                         headers: {
                           'api-key': process.env.AZURE_OPENAI_KEY
                         }
                       });
-                      const arrayBuffer = await imageResponse.arrayBuffer();
-                      const base64Image = Buffer.from(arrayBuffer).toString('base64');
-                      console.log(base64Image);
-                      const decodedResponse = Buffer.from(base64Image, 'base64').toString('utf-8');
-                      
-                      // Check if the response is an error message
-                      if (decodedResponse.includes('"error"')) {
-                        console.error(`Error retrieving image file: ${decodedResponse}`);
-                      } else {
-                        messages.push({ type: "image", content: base64Image });
+                
+                      if (!response.ok) {
+                        throw new Error(`Failed to download file: ${response.statusText}`);
                       }
-                    } catch (error) {
-                      console.error(`Error retrieving image file: ${error.message}`);
-                    }
+                
+                      // Get the file content as an array buffer
+                      const arrayBuffer = await response.arrayBuffer();
+                      const buffer = Buffer.from(arrayBuffer);
+                
+                      // Write the buffer to a file
+                      fs.writeFileSync(destPath, buffer);
+                
+                      console.log(`File downloaded to: ${destPath}`);
+                      if (fs.existsSync(destPath)) {
+                        console.log(`File saved successfully at: ${destPath}`);
+                      } else {
+                        console.log(`Error: File not found at path: ${destPath}`);
+                      }
+                      // Generate a download link message
+                      // const destPath = path.join(downloadsDir, path.basename(filePath));
+                      const downloadLink = process.env.AZURE === 'true'
+                      ? `https://ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                      : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
+
+
+                      console.log(`File downloaded to: ${destPath}`);
+                      console.log(`Accessible link: ${downloadLink}`);
+                      console.log(`Download link: ${downloadLink}`);
+                      downloadLinks.push(downloadLink);
+              } catch (error) {
+                console.error(`Error fetching file: ${error.message}`);
+              }
+            }
+          } else if (item.type === "image_file") {
+            try {
+              const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2025-01-01-preview`, {
+                headers: {
+                  'api-key': process.env.AZURE_OPENAI_KEY
                 }
-                }
+              });
+              const arrayBuffer = await imageResponse.arrayBuffer();
+              imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+            } catch (error) {
+              console.error(`Error retrieving image file: ${error.message}`);
             }
           }
-        
-        res.json({ messages });
-      } else {
-        res.status(500).json({ error: 'Failed to fetch messages' });
+        }
       }
-    } catch (error) {
-      console.error(`Error running the assistant: ${error.message}`);
-      res.status(500).json({ error: error.message });
+
+      // Return only the download links if files are requested
+      if (downloadLinks.length > 0) {
+        return res.json({ download_links: downloadLinks });
+      }
+
+      // Return the image if no files are requested
+      if (imageBase64) {
+        return res.json({ image: `data:image/png;base64,${imageBase64}` });
+      }
+
+      // If neither files nor images are available
+      return res.status(404).json({ error: 'No files or images were generated.' });
+    } else {
+      return res.status(500).json({ error: 'Failed to fetch messages' });
     }
+  } catch (error) {
+    console.error(`Error running the assistant: ${error.message}`);
+    return res.status(500).json({ error: error.message });
+  }
   });
   // app.get('/download', async (req, res) => {
   //   const filePath = req.query.filePath;
