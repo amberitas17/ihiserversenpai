@@ -205,10 +205,14 @@ app.post('/ask', async (req, res) => {
 
       const downloadLinks = [];
       let imageBase64 = null;
+      let botText = null;
 
       for await (const runMessageDatum of messagesResponse) {
         for (const item of runMessageDatum.content) {
-          if (item.type === "text" && item.text?.annotations) {
+          if (item.type === "text" && item.text?.annotations && item.text?.value) {
+            if (runMessageDatum.role === "assistant") {
+              botText = item.text.value; // Extract the bot's response text
+            }
             const annotations = item.text.annotations.filter(ann => ann.type === 'file_path');
             for (const annotation of annotations) {
               const filePath = annotation.text.replace('sandbox:', '');
@@ -304,7 +308,14 @@ app.post('/ask', async (req, res) => {
 
       // Return the image if no files are requested
       if (imageBase64) {
-        return res.json({ image: `data:image/png;base64,${imageBase64}` });
+        return res.json({ 
+          bot_text: botText || 'No bot response available.',
+          image: `data:image/png;base64,${imageBase64}` 
+        });
+      }
+
+      if (botText) {
+        return res.json({ bot_text: botText || 'No bot response available.', });
       }
 
       // If neither files nor images are available
