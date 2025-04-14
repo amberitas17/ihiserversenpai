@@ -303,7 +303,10 @@ app.post('/ask', async (req, res) => {
 
       // Return only the download links if files are requested
       if (downloadLinks.length > 0) {
-        return res.json({ download_links: downloadLinks });
+        return res.json({
+          bot_text: botText || 'No bot response available.', 
+          download_links: downloadLinks 
+        });
       }
 
       // Return the image if no files are requested
