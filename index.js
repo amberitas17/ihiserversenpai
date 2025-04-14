@@ -273,7 +273,7 @@ app.post('/ask', async (req, res) => {
                       // Generate a download link message
                       // const destPath = path.join(downloadsDir, path.basename(filePath));
                       const downloadLink = process.env.AZURE === 'true'
-                      ? `https://ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                      ? `https://ihisenpaiappihiap-ewcjhzcqdehvb9dz.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                       : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
 
 
