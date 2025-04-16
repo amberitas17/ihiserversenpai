@@ -258,7 +258,7 @@ app.post('/ask', async (req, res) => {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                   downloadLinks.push(downloadLink);
