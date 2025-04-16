@@ -76,7 +76,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
     form.append('file', fs.createReadStream(filePath));
 
     const response = await axios.post(
-      `${azureOpenAIEndpoint}/openai/files?api-version=2025-01-01-preview`,
+      `${azureOpenAIEndpoint}/openai/files?api-version=2024-05-01-preview`,
       form,
       {
         headers: {
@@ -110,6 +110,9 @@ app.post('/ask', async (req, res) => {
   // const uploadedFile = req.file;
   // let fileId = null;
   console.log('Received message:', fileid);
+  const modifiedMessage = fileid
+    ? `File ID: ${fileid}\n\n${userMessage}`
+    : userMessage;
 
   // // Check if a file is uploaded
   // // const file = req.files?.file;
@@ -205,110 +208,116 @@ app.post('/ask', async (req, res) => {
 
       const downloadLinks = [];
       let imageBase64 = null;
+      let botText = null;
 
-      for await (const runMessageDatum of messagesResponse) {
-        for (const item of runMessageDatum.content) {
-          if (item.type === "text" && item.text?.annotations) {
-            const annotations = item.text.annotations.filter(ann => ann.type === 'file_path');
-            for (const annotation of annotations) {
-              const filePath = annotation.text.replace('sandbox:', '');
-              const fileId = annotation.file_path.file_id;
-
-              const downloadsDir = process.env.RENDER === 'true'
-                      ? '/opt/render/Downloads'  // If it's running on Render
-                      : path.join(os.homedir(), 'Downloads');  // If running locally
-                      console.log('RENDER environment variable:', process.env.AZURE);
-
-
-                    // Serve the files in the /downloads route
-                    app.use('/downloads', express.static(downloadsDir, {
-                      setHeaders: (res, filePath) => {
-                        console.log(`Serving file: ${filePath}`);
-                      }
-                    }));
-
-                    // Define the destination path for saving files
-                    const destPath = path.join(downloadsDir, path.basename(filePath));
-                
-                    // Ensure the downloads directory exists
-                    // if (!fs.existsSync(downloadsDir)) {
-                    //   fs.mkdirSync(downloadsDir);
-                    // }
-                    // app.use('/downloads', express.static(downloadsDir));
-                    if (!fs.existsSync(downloadsDir)) {
-                      fs.mkdirSync(downloadsDir, { recursive: true });
-                    }
-                    // Define the file URL
-                    const fileUrl = `https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
-                
-                    try {
-                      // Fetch and download the file from URL
-                      const response = await fetch(fileUrl, {
-                        headers: {
-                          'api-key': process.env.AZURE_OPENAI_KEY
-                        }
-                      });
-                
-                      if (!response.ok) {
-                        throw new Error(`Failed to download file: ${response.statusText}`);
-                      }
-                
-                      // Get the file content as an array buffer
-                      const arrayBuffer = await response.arrayBuffer();
-                      const buffer = Buffer.from(arrayBuffer);
-                
-                      // Write the buffer to a file
-                      fs.writeFileSync(destPath, buffer);
-                
-                      console.log(`File downloaded to: ${destPath}`);
-                      if (fs.existsSync(destPath)) {
-                        console.log(`File saved successfully at: ${destPath}`);
-                      } else {
-                        console.log(`Error: File not found at path: ${destPath}`);
-                      }
-                      // Generate a download link message
-                      // const destPath = path.join(downloadsDir, path.basename(filePath));
-                      const downloadLink = process.env.AZURE === 'true'
-                      ? `https://ihisenpaipoc-azcva3bcexc2d3dd.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
-                      : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
-
-
-                      console.log(`File downloaded to: ${destPath}`);
-                      console.log(`Accessible link: ${downloadLink}`);
-                      console.log(`Download link: ${downloadLink}`);
-                      downloadLinks.push(downloadLink);
-              } catch (error) {
-                console.error(`Error fetching file: ${error.message}`);
+      const processMessages = async () => {
+        // Ensure messagesResponse.data is used, as it contains the array of messages
+        let botFinalMessage = null;
+        let botSecondMessage = null;
+        const messageTasks = messagesResponse.data.map(async (runMessageDatum, index) => {
+          // Map over content to process each item concurrently
+          const contentTasks = runMessageDatum.content.map(async (item) => {
+            if (item.type === "text" && item.text?.value) {
+              if (runMessageDatum.role === "assistant") {
+                if (!botSecondMessage && index === 0) {
+                  botSecondMessage = item.text.value;
+                }
+                // Always update the final message
+                botFinalMessage = item.text.value;
               }
-            }
-          } else if (item.type === "image_file") {
-            try {
-              const imageResponse = await fetch(`https://butch-m8idpr5x-australiaeast.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2025-01-01-preview`, {
-                headers: {
-                  'api-key': process.env.AZURE_OPENAI_KEY
+              const annotations = item.text.annotations?.filter(ann => ann.type === 'file_path') || [];
+              // Process annotations concurrently
+              const annotationTasks = annotations.map(async (annotation) => {
+                const filePath = annotation.text.replace('sandbox:', '');
+                const fileId = annotation.file_path.file_id;
+      
+                const downloadsDir = process.env.RENDER === 'true'
+                  ? '/opt/render/Downloads'  // If it's running on Render
+                  : path.join(os.homedir(), 'Downloads');  // If running locally
+      
+                if (!fs.existsSync(downloadsDir)) {
+                  fs.mkdirSync(downloadsDir, { recursive: true });
+                }
+      
+                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+      
+                try {
+                  const response = await fetch(fileUrl, {
+                    headers: {
+                      'api-key': process.env.AZURE_OPENAI_KEY
+                    }
+                  });
+      
+                  if (!response.ok) {
+                    throw new Error(`Failed to download file: ${response.statusText}`);
+                  }
+      
+                  const arrayBuffer = await response.arrayBuffer();
+                  const buffer = Buffer.from(arrayBuffer);
+                  const destPath = path.join(downloadsDir, path.basename(filePath));
+                  fs.writeFileSync(destPath, buffer);
+      
+                  const downloadLink = process.env.AZURE === 'true'
+                    ? `https://ihisenpaiappihiap-ewcjhzcqdehvb9dz.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
+      
+                  downloadLinks.push(downloadLink);
+                } catch (error) {
+                  console.error(`Error fetching file: ${error.message}`);
                 }
               });
-              const arrayBuffer = await imageResponse.arrayBuffer();
-              imageBase64 = Buffer.from(arrayBuffer).toString('base64');
-            } catch (error) {
-              console.error(`Error retrieving image file: ${error.message}`);
+      
+              await Promise.all(annotationTasks); // Process all annotations concurrently
+            } else if (item.type === "image_file") {
+              try {
+                const imageResponse = await fetch(`https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                  headers: {
+                    'api-key': process.env.AZURE_OPENAI_KEY
+                  }
+                });
+                const arrayBuffer = await imageResponse.arrayBuffer();
+                imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+              } catch (error) {
+                console.error(`Error retrieving image file: ${error.message}`);
+              }
             }
-          }
-        }
-      }
+          });
+      
+          await Promise.all(contentTasks); // Process all content items concurrently
+        });
+      
+        await Promise.all(messageTasks); // Process all messages concurrently
+        return { botSecondMessage, botFinalMessage }; // Return the final bot message
+      };
 
-      // Return only the download links if files are requested
+      // Build the response object
+      const { botSecondMessage, botFinalMessage } = await processMessages();
+      console.log("Bot's Second Message:", botSecondMessage);
+      console.log("Bot's Final Message:", botFinalMessage);
+
+      // Build the response object
+      const response = {
+        bot_second_message: botSecondMessage || 'No second message available.',
+        bot_final_message: botFinalMessage || 'No final message available.',
+      };
+
+      // Add download links if available
       if (downloadLinks.length > 0) {
-        return res.json({ download_links: downloadLinks });
+        response.download_links = downloadLinks;
       }
 
-      // Return the image if no files are requested
+      // Add image if available
       if (imageBase64) {
-        return res.json({ image: `data:image/png;base64,${imageBase64}` });
+        response.image = `data:image/png;base64,${imageBase64}`;
       }
 
-      // If neither files nor images are available
-      return res.status(404).json({ error: 'No files or images were generated.' });
+      // Return the response
+      if (botSecondMessage || botFinalMessage || downloadLinks.length > 0 || imageBase64) {
+        return res.json(response);
+      }
+
+      // If no data is available, return a 404 error
+      return res.status(404).json({ error: 'No data (message, files, or images) were generated.' });
     } else {
       return res.status(500).json({ error: 'Failed to fetch messages' });
     }
