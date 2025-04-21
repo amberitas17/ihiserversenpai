@@ -239,7 +239,7 @@ app.post('/ask', async (req, res) => {
                   fs.mkdirSync(downloadsDir, { recursive: true });
                 }
       
-                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
@@ -258,7 +258,7 @@ app.post('/ask', async (req, res) => {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `https://ihisenpaiappihiap-ewcjhzcqdehvb9dz.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://ihisenpai23.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                   downloadLinks.push(downloadLink);
@@ -270,7 +270,7 @@ app.post('/ask', async (req, res) => {
               await Promise.all(annotationTasks); // Process all annotations concurrently
             } else if (item.type === "image_file") {
               try {
-                const imageResponse = await fetch(`https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                const imageResponse = await fetch(`https://azure2234.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                   headers: {
                     'api-key': process.env.AZURE_OPENAI_KEY
                   }
