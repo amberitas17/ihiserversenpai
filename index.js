@@ -256,7 +256,7 @@ app.post('/ask', async (req, res) => {
                 fs.mkdirSync(downloadsDir, { recursive: true });
               }
       
-                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
