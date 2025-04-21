@@ -234,10 +234,20 @@ app.post('/ask', async (req, res) => {
                 const downloadsDir = process.env.RENDER === 'true'
                   ? '/opt/render/Downloads'  // If it's running on Render
                   : path.join(os.homedir(), 'Downloads');  // If running locally
+
+                
       
                 if (!fs.existsSync(downloadsDir)) {
                   fs.mkdirSync(downloadsDir, { recursive: true });
                 }
+
+              // Serve the files in the /downloads route
+              app.use('/downloads', express.static(downloadsDir, {
+                setHeaders: (res, filePath) => {
+                  console.log(`Serving file: ${filePath}`);
+                }
+              }));
+
       
                 const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
