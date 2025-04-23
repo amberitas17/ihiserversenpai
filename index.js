@@ -49,6 +49,19 @@ const getClient = () => {
 };
 
 const assistantsClient = getClient();
+const queue = [];
+let processing = false;
+
+function processQueue() {
+  if (processing || queue.length === 0) return;
+
+  processing = true;
+  const { req, res } = queue.shift();
+  handleAsk(req, res).finally(() => {
+    processing = false;
+    processQueue(); // process next job
+  });
+}
 
 app.use(express.json());
 app.use(cors());
@@ -101,7 +114,11 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
 
 
 app.post('/ask', async (req, res) => {
-  console.log('Received request at /ask endpoint');
+  queue.push({ req, res });
+  processQueue();
+});
+async function handleAsk(req, res) {
+    console.log('Received request at /ask endpoint');
   const userMessage = req.body.message;
   const fileid = req.body.file_id;
   if (!userMessage) {
@@ -335,7 +352,7 @@ app.post('/ask', async (req, res) => {
     console.error(`Error running the assistant: ${error.message}`);
     return res.status(500).json({ error: error.message });
   }
-  });
+  }
   // app.get('/download', async (req, res) => {
   //   const filePath = req.query.filePath;
   //   const fileId = req.query.fileId;
