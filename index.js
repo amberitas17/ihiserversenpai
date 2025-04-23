@@ -49,19 +49,8 @@ const getClient = () => {
 };
 
 const assistantsClient = getClient();
-const queue = [];
-let processing = false;
-
-function processQueue() {
-  if (processing || queue.length === 0) return;
-
-  processing = true;
-  const { req, res } = queue.shift();
-  handleAsk(req, res).finally(() => {
-    processing = false;
-    processQueue(); // process next job
-  });
-}
+const PQueue = require('p-queue');
+const assistantQueue = new PQueue({ concurrency: 10 });
 
 app.use(express.json());
 app.use(cors());
