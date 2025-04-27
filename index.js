@@ -12,8 +12,18 @@ const axios = require('axios');
 const FormData = require('form-data');
 // const fileUpload = require('express-fileupload');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); // Temporary storage for uploaded files
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // or wherever you're storing uploads
+  },
+  filename: function (req, file, cb) {
+    // Keep original file extension
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({ storage }); // Temporary storage for uploaded files
 const cors = require('cors');
+const crypto = require('crypto');
 
 
 
@@ -62,20 +72,25 @@ app.use(cors());
 app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
+const activeVectorStores = {}; // Key: session ID, Value: vector store ID
 app.post('/upload-file', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   const filePath = req.file.path;
+  const fileExtension = path.extname(req.file.originalname).toLowerCase(); // Get the file extension
+  console.log('Received file:', req.file.originalname);
+  console.log('File path:', filePath);
 
   try {
-    // Upload file to Azure
+    // Step 1: Upload the file to Azure OpenAI to get a file_id
+    console.log('Uploading file to Azure OpenAI...');
     const form = new FormData();
     form.append('purpose', 'assistants');
     form.append('file', fs.createReadStream(filePath));
 
-    const response = await axios.post(
+    const fileUploadResponse = await axios.post(
       `${azureOpenAIEndpoint}/openai/files?api-version=2024-05-01-preview`,
       form,
       {
@@ -83,16 +98,90 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
           ...form.getHeaders(),
           'api-key': azureOpenAIKey,
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Upload progress: ${percentCompleted}%`);
+        },
       }
     );
 
-    const fileId = response.data.id;
+    const fileId = fileUploadResponse.data.id;
+    console.log(`File uploaded to Azure OpenAI with ID: ${fileId}`);
+    // Check if the file is .docx or .pdf
+    if (fileExtension === '.xlsx' || fileExtension === '.csv') {
+      console.log('File is in .xlsx or .csv format. Skipping vector store creation.');
+      return res.json({
+        message: 'File uploaded successfully. No vector store created for .docx or .pdf files.',
+        file_id: fileId,
+      });
+    }
 
-    // Return the file ID to the client
-    res.json({ file_id: fileId });
+    // Step 2: Check for an existing vector store and delete it
+    const sessionId = req.headers['x-session-id'] || crypto.randomUUID(); // Use a session ID from the client or generate one
+    if (activeVectorStores[sessionId]) {
+      const oldVectorStoreId = activeVectorStores[sessionId];
+      console.log(`Deleting old vector store with ID: ${oldVectorStoreId}`);
+      try {
+        await axios.delete(
+          `${azureOpenAIEndpoint}/openai/vector_stores/${oldVectorStoreId}?api-version=2024-05-01-preview`,
+          {
+            headers: {
+              'api-key': azureOpenAIKey,
+            },
+          }
+        );
+        console.log(`Old vector store ${oldVectorStoreId} deleted successfully.`);
+      } catch (error) {
+        console.error(`Error deleting old vector store ${oldVectorStoreId}:`, error.message);
+      }
+    }
+
+    // Step 2: Create a vector store
+    const vectorStoreName = `VectorStore_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    console.log(`Generated vector store name: ${vectorStoreName}`);
+    console.log('Creating vector store...');
+    const vectorStoreResponse = await axios.post(
+      `${azureOpenAIEndpoint}/openai/vector_stores?api-version=2024-05-01-preview`,
+      { name: vectorStoreName },
+      {
+        headers: {
+          'api-key': azureOpenAIKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const vectorStoreId = vectorStoreResponse.data.id;
+    console.log(`Vector store created with ID: ${vectorStoreId}`);
+
+    // Step 3: Associate the file with the vector store
+    console.log('Associating file with vector store...');
+    await axios.post(
+      `${azureOpenAIEndpoint}/openai/vector_stores/${vectorStoreId}/files?api-version=2024-05-01-preview`,
+      { file_id: fileId },
+      {
+        headers: {
+          'api-key': azureOpenAIKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    // const sessionId = req.headers['x-session-id'] || crypto.randomUUID(); // Use a session ID from the client or generate one
+    activeVectorStores[sessionId] = vectorStoreId;
+    console.log(`Stored vector store ID ${vectorStoreId} for session ${sessionId}`);
+
+    // Return the file ID and vector store ID to the client
+    res.json({
+      message: 'File uploaded and associated with vector store successfully',
+      file_id: fileId,
+      vector_store_id: vectorStoreId,
+    });
   } catch (error) {
-    console.error('Error uploading file:', error.message);
-    res.status(500).json({ error: 'Failed to upload file' });
+    console.error('Error:', error.response?.data || error.message);
+    res.status(500).json({
+      error: 'Failed to upload file or associate with vector store',
+      details: error.response?.data || error.message,
+    });
   } finally {
     // Clean up the uploaded file
     fs.unlinkSync(filePath);
@@ -104,12 +193,83 @@ app.post('/ask', async (req, res) => {
   console.log('Received request at /ask endpoint');
   const userMessage = req.body.message;
   const fileid = req.body.file_id;
+  console.log('Received file ID:', fileid);
   if (!userMessage) {
     return res.status(400).json({ error: 'Message body parameter is required' });
   }
+  if (!fileid) {
+    return res.status(400).json({ error: 'File ID is required' });
+  }
+
+
+
+
+  // if (!vectorStoreId) {
+  //   return res.status(400).json({ error: 'Vector Store ID is required for file search' });
+  // }
+   // Retrieve the vector store ID associated with the file ID
+   // Retrieve the vector store ID associated with the session ID
+  // Use the provided session ID or fallback to the most recent vector store
+  const sessionId = req.headers['x-session-id'];
+  let vectorStoreId;
+
+  if (sessionId) {
+    vectorStoreId = activeVectorStores[sessionId];
+  } else {
+    // Retrieve the most recently created vector store ID
+    const recentSessionId = Object.keys(activeVectorStores).pop();
+    vectorStoreId = activeVectorStores[recentSessionId];
+  }
+
+// Retrieve the original file name from Azure OpenAI or your storage system
+// Retrieve the original file name from Azure OpenAI or your storage system
+let originalFileName;
+try {
+  const fileDetailsResponse = await axios.get(
+    `${azureOpenAIEndpoint}/openai/files/${fileid}?api-version=2024-05-01-preview`,
+    {
+      headers: {
+        'api-key': azureOpenAIKey,
+      },
+    }
+  );
+
+  console.log('File details response:', fileDetailsResponse.data);
+
+  originalFileName = fileDetailsResponse.data.filename; // Retrieve the original file name
+  if (!originalFileName) {
+    console.warn('File name is missing in the response. Using a default name.');
+    originalFileName = `unknown_file_${fileid}`;
+  }
+  console.log(`Original file name: ${originalFileName}`);
+} catch (error) {
+  console.error('Error retrieving file details:', error.response?.data || error.message);
+  return res.status(500).json({ error: 'Failed to retrieve file details' });
+}
+
+// Check if the file is in .xlsx or .csv format
+let fileExtension;
+try {
+  fileExtension = path.extname(originalFileName).toLowerCase();
+} catch (error) {
+  console.error('Error determining file extension:', error.message);
+  return res.status(500).json({ error: 'Failed to determine file extension' });
+}
+
+const isExcelOrCsv = fileExtension === '.xlsx' || fileExtension === '.csv';
+
+if (!vectorStoreId && !isExcelOrCsv) {
+  return res.status(404).json({
+    error: 'No vector store found for the session or recent activity, and the file is not in .xlsx or .csv format.',
+  });
+}
+
+
   // const uploadedFile = req.file;
   // let fileId = null;
-  console.log('Received message:', fileid);
+  console.log('Received message:', userMessage);
+  console.log('Received vector store ID:', vectorStoreId);
+
   const modifiedMessage = fileid
     ? `File ID: ${fileid}\n\n${userMessage}`
     : userMessage;
@@ -169,9 +329,12 @@ app.post('/ask', async (req, res) => {
     model: "gpt-4o",
     name: "Assistant133",
     instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
-    tools: [{ type: "code_interpreter" }],
+    tools: [{ type: "code_interpreter" }, { type: "file_search" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
-    tool_resources: fileid ? { code_interpreter: { file_ids: [fileid] } } : undefined,
+    tool_resources: {
+      code_interpreter: fileid ? { file_ids: [fileid] } : undefined,
+      file_search: vectorStoreId ? { vector_store_ids: [vectorStoreId] } : undefined,
+    },
     temperature: 0.7,
     top_p: 0.9,
   };
@@ -256,7 +419,7 @@ app.post('/ask', async (req, res) => {
                 fs.mkdirSync(downloadsDir, { recursive: true });
               }
       
-                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
@@ -275,7 +438,7 @@ app.post('/ask', async (req, res) => {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `https://ihisenpaiappihiap-ewcjhzcqdehvb9dz.southeastasia-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://ihisenpai23.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                     console.log(`File downloaded to: ${destPath}`);
