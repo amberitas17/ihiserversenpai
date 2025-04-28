@@ -197,9 +197,6 @@ app.post('/ask', async (req, res) => {
   if (!userMessage) {
     return res.status(400).json({ error: 'Message body parameter is required' });
   }
-  if (!fileid) {
-    return res.status(400).json({ error: 'File ID is required' });
-  }
 
 
 
