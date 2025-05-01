@@ -444,7 +444,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `https://ihisenpai23.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://ihisenpaitest-fbdxe3dqdch4drg6.eastus-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                     console.log(`File downloaded to: ${destPath}`);
