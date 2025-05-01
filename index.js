@@ -197,9 +197,6 @@ app.post('/ask', async (req, res) => {
   if (!userMessage) {
     return res.status(400).json({ error: 'Message body parameter is required' });
   }
-  if (!fileid) {
-    return res.status(400).json({ error: 'File ID is required' });
-  }
 
 
 
@@ -223,45 +220,54 @@ app.post('/ask', async (req, res) => {
 
 // Retrieve the original file name from Azure OpenAI or your storage system
 // Retrieve the original file name from Azure OpenAI or your storage system
-let originalFileName;
-try {
-  const fileDetailsResponse = await axios.get(
-    `${azureOpenAIEndpoint}/openai/files/${fileid}?api-version=2024-05-01-preview`,
-    {
-      headers: {
-        'api-key': azureOpenAIKey,
-      },
+let originalFileName = null;
+let fileExtension = null;
+let isExcelOrCsv = false;
+if (fileid) {
+  try {
+    // Retrieve the original file name from Azure OpenAI
+    const fileDetailsResponse = await axios.get(
+      `${azureOpenAIEndpoint}/openai/files/${fileid}?api-version=2024-05-01-preview`,
+      {
+        headers: {
+          'api-key': azureOpenAIKey,
+        },
+      }
+    );
+
+    console.log('File details response:', fileDetailsResponse.data);
+
+    originalFileName = fileDetailsResponse.data.filename; // Retrieve the original file name
+    if (!originalFileName) {
+      console.warn('File name is missing in the response. Using a default name.');
+      originalFileName = `unknown_file_${fileid}`;
     }
-  );
 
-  console.log('File details response:', fileDetailsResponse.data);
-
-  originalFileName = fileDetailsResponse.data.filename; // Retrieve the original file name
-  if (!originalFileName) {
-    console.warn('File name is missing in the response. Using a default name.');
-    originalFileName = `unknown_file_${fileid}`;
+    console.log(`Original file name: ${originalFileName}`);
+    fileExtension = path.extname(originalFileName).toLowerCase();
+    isExcelOrCsv = fileExtension === '.xlsx' || fileExtension === '.csv';
+  } catch (error) {
+    console.error('Error retrieving file details:', error.response?.data || error.message);
+    console.warn('Proceeding without file details as file_id is optional.');
   }
-  console.log(`Original file name: ${originalFileName}`);
-} catch (error) {
-  console.error('Error retrieving file details:', error.response?.data || error.message);
-  return res.status(500).json({ error: 'Failed to retrieve file details' });
+} else {
+  console.log('No file ID provided. Proceeding without file-related operations.');
 }
 
-// Check if the file is in .xlsx or .csv format
-let fileExtension;
-try {
-  fileExtension = path.extname(originalFileName).toLowerCase();
-} catch (error) {
-  console.error('Error determining file extension:', error.message);
-  return res.status(500).json({ error: 'Failed to determine file extension' });
+// Ensure fileExtension and isExcelOrCsv are initialized
+if (originalFileName && !fileExtension) {
+  try {
+    fileExtension = path.extname(originalFileName).toLowerCase();
+    isExcelOrCsv = fileExtension === '.xlsx' || fileExtension === '.csv';
+  } catch (error) {
+    console.error('Error determining file extension:', error.message);
+    return res.status(500).json({ error: 'Failed to determine file extension' });
+  }
 }
 
-const isExcelOrCsv = fileExtension === '.xlsx' || fileExtension === '.csv';
 
 if (!vectorStoreId && !isExcelOrCsv) {
-  return res.status(404).json({
-    error: 'No vector store found for the session or recent activity, and the file is not in .xlsx or .csv format.',
-  });
+  console.warn('No vector store found and the file is not in .xlsx or .csv format. Proceeding without these.');
 }
 
 
@@ -453,6 +459,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
               await Promise.all(annotationTasks); // Process all annotations concurrently
             } else if (item.type === "image_file") {
               try {
+                console.log(`Fetching image with file ID: ${item.image_file.file_id}`);
                 const imageResponse = await fetch(`https://azure2234.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                   headers: {
                     'api-key': process.env.AZURE_OPENAI_KEY
