@@ -332,8 +332,8 @@ if (!vectorStoreId && !isExcelOrCsv) {
   // }
 
   const options = {
-    model: "gpt-4o",
-    name: "Assistant133",
+    model: "gpt-4.1",
+    name: "Assistant579",
     instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
     tools: [{ type: "code_interpreter" }, { type: "file_search" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
@@ -425,7 +425,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                 fs.mkdirSync(downloadsDir, { recursive: true });
               }
       
-                const fileUrl = `https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://ihisenpaiappv1.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
@@ -460,7 +460,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
             } else if (item.type === "image_file") {
               try {
                 console.log(`Fetching image with file ID: ${item.image_file.file_id}`);
-                const imageResponse = await fetch(`https://ihisenpaiihiap1160250515.cognitiveservices.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                const imageResponse = await fetch(`https://ihisenpaiappv1.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                   headers: {
                     'api-key': process.env.AZURE_OPENAI_KEY
                   }
