@@ -72,6 +72,54 @@ app.use(cors());
 app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
+const uploadAudio = multer({ dest: 'uploads/' });
+const transcriptions = {}; // In-memory store
+
+app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No audio file uploaded.' });
+  }
+
+  const apiKey = process.env.AZURE_OPENAI_KEY;
+  const endpoint = 'https://ai-cherry1273ai188374557557.cognitiveservices.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
+
+  try {
+    const form = new FormData();
+    form.append('model', 'gpt-4o-transcribe');
+    form.append('file', fs.createReadStream(req.file.path), req.file.originalname);
+
+    const response = await axios.post(endpoint, form, {
+      headers: {
+        ...form.getHeaders(),
+        'Authorization': `Bearer 27WnforOMkKgF3KdYYEWANE8KuvuscIP9ve8HKRfgsrhYwLDk2G3JQQJ99ALACHYHv6XJ3w3AAAAACOGbFbV`,
+      },
+      maxBodyLength: Infinity,
+    });
+
+    fs.unlinkSync(req.file.path);
+
+    const filenameWithoutExt = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    // Store transcription by filename
+    transcriptions[filenameWithoutExt] = response.data.text;
+
+    res.json({
+      filename: filenameWithoutExt
+    });
+  } catch (error) {
+    fs.unlinkSync(req.file.path);
+    console.error('Audio transcription error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to transcribe audio', details: error.response?.data || error.message });
+  }
+});
+app.get('/audio-transcribe/:filename', (req, res) => {
+  const { filename } = req.params;
+  const text = transcriptions[filename];
+  if (text) {
+    res.json({ text });
+  } else {
+    res.status(404).json({ error: 'Transcription not found for this filename.' });
+  }
+});
 const activeVectorStores = {}; // Key: session ID, Value: vector store ID
 app.post('/upload-file', upload.single('file'), async (req, res) => {
   if (!req.file) {
