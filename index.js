@@ -80,7 +80,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'No audio file uploaded.' });
   }
 
-  const apiKey = process.env.AZURE_OPENAI_KEY;
+  const apiKey = process.env.AZURE_OPENAI_KEY2;
   const endpoint = 'https://ai-cherry1273ai188374557557.cognitiveservices.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
 
   try {
@@ -91,7 +91,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
     const response = await axios.post(endpoint, form, {
       headers: {
         ...form.getHeaders(),
-        'Authorization': `Bearer 27WnforOMkKgF3KdYYEWANE8KuvuscIP9ve8HKRfgsrhYwLDk2G3JQQJ99ALACHYHv6XJ3w3AAAAACOGbFbV`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       maxBodyLength: Infinity,
     });
