@@ -86,7 +86,16 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
   try {
     const form = new FormData();
     form.append('model', 'gpt-4o-transcribe');
-    form.append('file', fs.createReadStream(req.file.path), req.file.originalname);
+
+    // Ensure the filename is UTF-8
+    let originalName = req.file.originalname;
+    if (/[\x80-\xFF]/.test(originalName)) {
+      // If there are non-ASCII bytes, try decoding as latin1 to utf8
+      originalName = Buffer.from(originalName, 'latin1').toString('utf8');
+    }
+
+    form.append('file', fs.createReadStream(req.file.path), originalName);
+        
 
     const response = await axios.post(endpoint, form, {
       headers: {
@@ -98,7 +107,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-    const filenameWithoutExt = path.basename(req.file.originalname, path.extname(req.file.originalname));
+    const filenameWithoutExt = path.basename(originalName, path.extname(originalName));
     // Store transcription by filename
     transcriptions[filenameWithoutExt] = response.data.text;
 
