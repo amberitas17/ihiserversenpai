@@ -389,8 +389,8 @@ if (!vectorStoreId && !isExcelOrCsv) {
   // }
 
   const options = {
-    model: "gpt-4o",
-    name: "Assistant133",
+    model: "gpt-4.1",
+    name: "Assistant579",
     instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
     tools: [{ type: "code_interpreter" }, { type: "file_search" }],
     // tool_resources: { code_interpreter: { file_ids: [] } },
