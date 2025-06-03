@@ -482,7 +482,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                 fs.mkdirSync(downloadsDir, { recursive: true });
               }
       
-                const fileUrl = `https://azure2234.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://ihisenpaiappv1.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
@@ -501,7 +501,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `https://ihisenpaitest-fbdxe3dqdch4drg6.eastus-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://senpaiihiapv1-fcfwetbaetfzb9bb.australiaeast-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                     console.log(`File downloaded to: ${destPath}`);
@@ -517,7 +517,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
             } else if (item.type === "image_file") {
               try {
                 console.log(`Fetching image with file ID: ${item.image_file.file_id}`);
-                const imageResponse = await fetch(`https://azure2234.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                const imageResponse = await fetch(`https://ihisenpaiappv1.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                   headers: {
                     'api-key': process.env.AZURE_OPENAI_KEY
                   }
