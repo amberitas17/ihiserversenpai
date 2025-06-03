@@ -81,7 +81,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
   }
 
   const apiKey = process.env.AZURE_OPENAI_KEY2;
-  const endpoint = 'https://ai-cherry1273ai188374557557.cognitiveservices.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
+  const endpoint = 'https://senpaiihiaptranscribe.openai.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
 
   try {
     const form = new FormData();
