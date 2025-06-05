@@ -387,17 +387,29 @@ if (!vectorStoreId && !isExcelOrCsv) {
   // } else {
   //   console.log('No file uploaded.');
   // }
+  const wantsOnlyCodeInterpreter =
+  !fileid && !vectorStoreId &&
+  /bar chart|line chart|pie chart|plot|draw|chart|graph/i.test(userMessage) &&
+  /\d/.test(userMessage); // crude check for numbers
+
+  const tools = wantsOnlyCodeInterpreter
+    ? [{ type: "code_interpreter" }]
+    : [{ type: "code_interpreter" }, { type: "file_search" }];
+
+  const tool_resources = wantsOnlyCodeInterpreter
+    ? undefined
+    : {
+        code_interpreter: fileid ? { file_ids: [fileid] } : undefined,
+        file_search: vectorStoreId ? { vector_store_ids: [vectorStoreId] } : undefined,
+      };
 
   const options = {
     model: "gpt-4.1",
     name: "Assistant579",
     instructions: "You are here to visualize and generate charts and graphs. You are also going to process Excel files that is used for summarization.",
-    tools: [{ type: "code_interpreter" }, { type: "file_search" }],
+    tools,
     // tool_resources: { code_interpreter: { file_ids: [] } },
-    tool_resources: {
-      code_interpreter: fileid ? { file_ids: [fileid] } : undefined,
-      file_search: vectorStoreId ? { vector_store_ids: [vectorStoreId] } : undefined,
-    },
+    tool_resources,
     temperature: 0.7,
     top_p: 0.9,
   };
