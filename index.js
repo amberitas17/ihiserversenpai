@@ -81,7 +81,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
   }
 
   const apiKey = process.env.AZURE_OPENAI_KEY2;
-  const endpoint = 'https://senpaiapp4.openai.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
+  const endpoint = 'https://ihisenpaiaiapptranscribe5.openai.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
 
   try {
     const form = new FormData();
@@ -494,7 +494,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                 fs.mkdirSync(downloadsDir, { recursive: true });
               }
       
-                const fileUrl = `https://senpaiapp4.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
+                const fileUrl = `https://ihisenpaiapp5.openai.azure.com/openai/files/${fileId}/content?api-version=2024-05-01-preview`;
       
                 try {
                   const response = await fetch(fileUrl, {
@@ -513,7 +513,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
                   fs.writeFileSync(destPath, buffer);
       
                   const downloadLink = process.env.AZURE === 'true'
-                    ? `https://ihisenpaiapp4-hkgqaygafmcddcgb.swedencentral-01.azurewebsites.net/downloads/${path.basename(filePath)}`
+                    ? `https://ihisenpaiaiapp5-gzbkd7ehdmc5gjh2.swedencentral-01.azurewebsites.net/downloads/${path.basename(filePath)}`
                     : `http://localhost:${port}/downloads/${path.basename(filePath)}`;
       
                     console.log(`File downloaded to: ${destPath}`);
@@ -529,7 +529,7 @@ if (!vectorStoreId && !isExcelOrCsv) {
             } else if (item.type === "image_file") {
               try {
                 console.log(`Fetching image with file ID: ${item.image_file.file_id}`);
-                const imageResponse = await fetch(`https://senpaiapp4.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
+                const imageResponse = await fetch(`https://ihisenpaiapp5.openai.azure.com/openai/files/${item.image_file.file_id}/content?api-version=2024-05-01-preview`, {
                   headers: {
                     'api-key': process.env.AZURE_OPENAI_KEY
                   }
