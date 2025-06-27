@@ -81,7 +81,7 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
   }
 
   const apiKey = process.env.AZURE_OPENAI_KEY2;
-  const endpoint = 'https://ai-cherry1273ai188374557557.cognitiveservices.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
+  const endpoint = 'https://ai-cherry1273ai188374557557.openai.azure.com/openai/deployments/gpt-4o-transcribe/audio/transcriptions?api-version=2025-03-01-preview';
 
   try {
     const form = new FormData();
@@ -120,6 +120,37 @@ app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Failed to transcribe audio', details: error.response?.data || error.message });
   }
 });
+// app.post('/audio-transcribe', uploadAudio.single('file'), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).json({ error: 'No audio file uploaded.' });
+//   }
+
+//   const apiKey = process.env.AZURE_OPENAI_KEY2;
+//   const endpoint = 'https://ai-cherry1273ai188374557557.cognitiveservices.azure.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15';
+
+//   try {
+//     const form = new FormData();
+//     // Attach only the audio file, no definition
+//     form.append('audio', fs.createReadStream(req.file.path), req.file.originalname);
+
+//     const response = await axios.post(endpoint, form, {
+//       headers: {
+//         ...form.getHeaders(),
+//         'Ocp-Apim-Subscription-Key': apiKey,
+//         'Accept': 'application/json'
+//       },
+//       maxBodyLength: Infinity,
+//     });
+
+//     fs.unlinkSync(req.file.path);
+
+//     res.json(response.data);
+//   } catch (error) {
+//     fs.unlinkSync(req.file.path);
+//     console.error('Audio transcription error:', error.response?.data || error.message);
+//     res.status(500).json({ error: 'Failed to transcribe audio', details: error.response?.data || error.message });
+//   }
+// });
 app.get('/audio-transcribe/:filename', (req, res) => {
   const { filename } = req.params;
   const text = transcriptions[filename];
